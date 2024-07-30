@@ -1,0 +1,233 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <memory>
+#include <algorithm>
+
+#define n 9 // Number of courses
+#define m 2 // Number of students
+
+int roll_No = 4500; // Base Roll Number
+int registered = 0;
+
+// Vector containing names of all n Available Courses
+std::vector<std::string> courses = {"Math", "English", "Hindi Literature", "Sanskrit", "Arts", "Logic", "Social Science", "Humanities", "Music"};
+
+// Node data type for storing opted course index for each student
+struct Node {
+    int data;
+    std::shared_ptr<Node> next;
+    Node(int val) : data(val), next(nullptr) {}
+};
+
+// Student data type for storing all student details
+struct Student {
+    std::string Name;
+    std::shared_ptr<Node> classes; // List of Course Indices
+    int rollNo;
+};
+
+// Course data type for storing course index and Roll Numbers of students who have opted for that course
+struct Course {
+    int name;
+    std::shared_ptr<Node> studentRollNum;
+    Course(int courseName) : name(courseName), studentRollNum(nullptr) {}
+};
+
+// Vector containing pointers to all m registered students
+std::vector<std::shared_ptr<Student>> studentList(m);
+
+// Vector containing pointers to all students who have opted for a specific course
+std::vector<std::shared_ptr<Course>> ListOfCourses(n, nullptr);
+
+// Function to create a new Linked List (of type Node) for a given Course Index
+std::shared_ptr<Node> newNode(int val) {
+    return std::make_shared<Node>(val);
+}
+
+// Function to create a new Student
+std::shared_ptr<Student> newStudent(const std::string& Name) {
+    auto student = std::make_shared<Student>();
+    student->Name = Name;
+    student->classes = nullptr;
+    return student;
+}
+
+// Function to create a new Course
+std::shared_ptr<Course> newCourse(int name) {
+    return std::make_shared<Course>(name);
+}
+
+// Function which prints all n available courses [Report 1]
+void listCourses() {
+    std::cout << "List of Courses Open for Registration:\n";
+    for (int i = 0; i < n; ++i) {
+        std::cout << i + 1 << ". " << courses[i] << "\n";
+    }
+}
+
+// Function registers opted courses for each student and stores them in linked list (node). Thus, registration is completed.
+void StartRegistration(std::shared_ptr<Student> curr, int RollNo) {
+    listCourses();
+    std::cout << "Select your desired courses, by entering the Course Index.\nTo confirm registration enter ZERO and press ENTER\n>> ";
+
+    int i = 0;
+    while (true) {
+        int t;
+        std::cin >> t;
+
+        if (t > n || t < 0) {
+            std::cout << "Please Enter a Valid Course Index\n";
+            continue;
+        }
+
+        if (t == 0 && i == 0) {
+            std::cout << "Please register for at least 1 Course\n";
+            continue;
+        }
+
+        if (t == 0) {
+            break;
+        }
+
+        auto num = newNode(t - 1);
+        if (!curr->classes) {
+            curr->classes = num;
+        } else {
+            num->next = curr->classes;
+            curr->classes = num;
+        }
+
+        if (!ListOfCourses[t - 1]) {
+            ListOfCourses[t - 1] = newCourse(t - 1);
+            ListOfCourses[t - 1]->studentRollNum = newNode(RollNo);
+        } else {
+            auto newRollNode = newNode(RollNo);
+            newRollNode->next = ListOfCourses[t - 1]->studentRollNum;
+            ListOfCourses[t - 1]->studentRollNum = newRollNode;
+        }
+        ++i;
+    }
+}
+
+// Starting of Registration process. Student details are registered, stored, and Roll Numbers are allocated
+void CourseRegis() {
+    std::string Name;
+    std::cin.ignore(); // To clear the buffer before taking getline input
+
+    for (int i = 0; i < m; ++i) {
+        std::cout << "\n\nEnter your Name\t: ";
+        std::getline(std::cin, Name);
+        auto student = newStudent(Name);
+        student->rollNo = i + roll_No;
+        studentList[i] = student;
+        StartRegistration(student, i + roll_No);
+        std::cout << "Registration Successful!\nYour Roll Number is " << i + roll_No << "\n";
+    }
+    std::cout << "\n\n\nRegistration Ended\n\n\n";
+    registered = 1;
+}
+
+// Function to print the courses that each student has opted for
+void List2() {
+    if (!registered) {
+        std::cout << "Please Register and get your roll_Number first\n";
+        return;
+    }
+
+    std::cout << "\n\nList of Courses for each Student\n\n";
+    for (const auto& curr : studentList) {
+        std::cout << "Name = " << curr->Name << "\nRoll Number = " << curr->rollNo << "\nOpted Course List\n";
+        auto temp = curr->classes;
+        int i = 1;
+        while (temp) {
+            std::cout << i++ << ". " << courses[temp->data] << "\n";
+            temp = temp->next;
+        }
+        std::cout << "\n\n";
+    }
+}
+
+// Function to print the names of students who have opted for a course
+void List2Type2() {
+    int j = 1;
+    for (int i = 0; i < n; ++i) {
+        if (!ListOfCourses[i]) continue;
+
+        auto stds = ListOfCourses[i]->studentRollNum;
+        std::string cname = courses[ListOfCourses[i]->name];
+        std::cout << j << ". List of Students in Course " << cname << "\n";
+        ++j;
+        int k = 1;
+        while (stds) {
+            int rn = stds->data - roll_No;
+            std::cout << "\t" << k << ". " << studentList[rn]->Name << "\n";
+            stds = stds->next;
+            ++k;
+        }
+        std::cout << "\n";
+    }
+}
+
+// Function to allow user to repeat any function they like
+void repeat() {
+    while (true) {
+        int c;
+        std::cout << "Enter Your Choice \n";
+        std::cout << "1. List all Available Courses\n";
+        std::cout << "2. List all Opted Courses for a Specific Student\n";
+        std::cout << "3. List Courses Opted by All Students\n";
+        std::cout << "4. List Students in each Course\n";
+        std::cout << "5. Quit\n";
+        std::cout << ">> ";
+
+        std::cin >> c;
+
+        if (c == 1) {
+            listCourses();
+            std::cout << "\n";
+        } else if (c == 2) {
+            int rn;
+            std::cout << "\nPlease Enter your Roll Number\n>> ";
+            std::cin >> rn;
+
+            if (rn >= roll_No && rn <= roll_No + m) {
+                int idx = rn - roll_No;
+                auto curr = studentList[idx];
+                std::cout << "\tName = " << curr->Name << "\n";
+                auto temp = curr->classes;
+                int c = 1;
+                while (temp) {
+                    std::cout << "\t" << c++ << ". " << courses[temp->data] << "\n";
+                    temp = temp->next;
+                }
+                std::cout << "\n";
+            } else {
+                std::cout << "\nInvalid Roll_Number\n\n";
+            }
+        } else if (c == 3) {
+            List2();
+            std::cout << "\n";
+        } else if (c == 4) {
+            std::cout << "\n";
+            List2Type2();
+            std::cout << "\n";
+        } else if (c == 5) {
+            return;
+        } else {
+            std::cout << "\nInvalid Response\n\n";
+            std::cout << "\nTry Again\n\n";
+        }
+    }
+}
+
+int main() {
+    std::cout << "Welcome to XYZ University Student Portal\n\n\n";
+    listCourses();
+    CourseRegis();
+    List2();
+    List2Type2();
+    repeat();
+    std::cout << "\n\nThank You for using XYZ University Student Portal\n";
+    return 0;
+}
